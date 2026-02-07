@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>渡部さん神経衰弱 対戦モード</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+            background: linear-gradient(135deg, #f5e6d3 0%, #d4c5b0 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1vh 2vw;
+        }
+
+        .header {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 1vh 2vw;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 2px solid #8b4513;
+            margin-bottom: 1vh;
+        }
+
+        h1 {
+            color: #8b4513;
+            font-size: clamp(1.2em, 3vw, 1.8em);
+            margin-bottom: 0.3vh;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            color: #a0522d;
+            font-size: clamp(0.8em, 1.8vw, 1em);
+            margin-bottom: 0.5vh;
+        }
+
+        .players {
+            display: flex;
+            gap: 2vw;
+            justify-content: center;
+            margin-top: 1vh;
+        }
+
+        .player-box {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.8vh 1.5vw;
+            border-radius: 8px;
+            border: 2px solid #8b4513;
+            min-width: 120px;
+            transition: all 0.3s;
+        }
+
+        .player-box.active {
+            border-color: #dc143c;
+            box-shadow: 0 0 15px rgba(220, 20, 60, 0.5);
+            transform: scale(1.05);
+        }
+
+        .player-name {
+            font-size: clamp(0.9em, 2vw, 1.1em);
+            font-weight: bold;
+            color: #8b4513;
+            margin-bottom: 0.3vh;
+        }
+
+        .player-score {
+            font-size: clamp(1em, 2.2vw, 1.3em);
+            color: #654321;
+        }
+
+        .fukasetu {
+            color: #dc143c;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        .game-container {
+            max-width: 90vw;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 2vh;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: clamp(8px, 1.5vw, 15px);
+            width: 100%;
+            max-width: min(80vh, 60vw);
+            margin-bottom: 1vh;
+        }
+
+        .card {
+            aspect-ratio: 3/4;
+            position: relative;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card.matched {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .card.watanabe .card-back {
+            background: linear-gradient(135deg, #fff8dc 0%, #ffd700 50%, #fff8dc 100%);
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.2);
+            animation: shimmer 2s infinite;
+        }
+
+        .card.watanabe .card-back::after {
+            content: '👑 本家！';
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            font-size: clamp(0.3em, 0.8vw, 0.4em);
+            color: #dc143c;
+            font-weight: bold;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.9), 0 2px 6px rgba(0, 0, 0, 0.2); }
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(1.5em, 4vw, 2.5em);
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            border: 2px solid #8b4513;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #dc143c 0%, #8b0000 100%);
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #f5f5dc 0%, #fff8dc 100%);
+            transform: rotateY(180deg);
+            color: #654321;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 2vw;
+            margin-top: 1vh;
+        }
+
+        button {
+            background: linear-gradient(135deg, #dc143c 0%, #8b0000 100%);
+            color: #ffd700;
+            border: 2px solid #8b4513;
+            padding: clamp(8px, 1.5vh, 12px) clamp(20px, 4vw, 35px);
+            font-size: clamp(0.9em, 2vw, 1.1em);
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .message {
+            text-align: center;
+            font-size: clamp(0.9em, 2vw, 1.2em);
+            color: #8b4513;
+            margin-top: 1vh;
+            min-height: clamp(30px, 5vh, 40px);
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .victory {
+            background: rgba(255, 215, 0, 0.3);
+            padding: 1.5vh 2vw;
+            border-radius: 8px;
+            border: 2px solid #ffd700;
+            animation: celebrate 1s ease-in-out;
+        }
+
+        .watanabe-bonus {
+            background: rgba(255, 215, 0, 0.2);
+            padding: 1vh 2vw;
+            border-radius: 6px;
+            border: 2px solid #ffd700;
+            animation: bonusFlash 0.5s ease-in-out;
+        }
+
+        @keyframes bonusFlash {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @media (max-width: 768px) {
+            .card-grid {
+                grid-template-columns: repeat(3, 1fr);
+                max-width: min(90vh, 70vw);
+            }
+
+            .players {
+                flex-direction: column;
+                gap: 1vh;
+            }
+
+            .player-box {
+                min-width: auto;
+            }
+        }
+
+        @media (min-width: 769px) and (max-height: 800px) {
+            .card-grid {
+                max-width: min(70vh, 50vw);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎴 渡部さん神経衰弱 対戦モード 🎴</h1>
+        <div class="subtitle">渡○の漢字を揃えて得点を競おう！</div>
+        <div class="players">
+            <div class="player-box" id="player1Box">
+                <div class="player-name">👤 プレイヤー1</div>
+                <div class="player-score" id="player1Score">0Pt</div>
+            </div>
+            <div class="player-box" id="player2Box">
+                <div class="player-name">👤 プレイヤー2</div>
+                <div class="player-score" id="player2Score">0Pt</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <div class="card-grid" id="cardGrid"></div>
+        <div class="message" id="message"></div>
+        <div class="buttons">
+            <button onclick="resetGame()">🔄 新しいゲーム</button>
+        </div>
+    </div>
+
+    <script>
+        // 渡部のバリエーション6種類
+        const watanabeVariants = ['部', '辺', '邉', '邊', '鍋', '邉'];
+        
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let canFlip = true;
+        
+        // 対戦モード用の変数
+        let currentPlayer = 1;
+        let player1Score = { normal: 0, fukasetu: 0 };
+        let player2Score = { normal: 0, fukasetu: 0 };
+
+        function initGame() {
+            // カードペアを作成（各バリエーションを2枚ずつ）
+            cards = [];
+            watanabeVariants.forEach(variant => {
+                cards.push({ value: variant, id: Math.random() });
+                cards.push({ value: variant, id: Math.random() });
+            });
+
+            // シャッフル
+            cards.sort(() => Math.random() - 0.5);
+
+            // カードグリッドを描画
+            const grid = document.getElementById('cardGrid');
+            grid.innerHTML = '';
+            
+            cards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                if (card.value === '部') {
+                    cardElement.classList.add('watanabe');
+                }
+                cardElement.dataset.index = index;
+                cardElement.innerHTML = `
+                    <div class="card-face card-front">渡</div>
+                    <div class="card-face card-back">渡${card.value}</div>
+                `;
+                cardElement.addEventListener('click', () => flipCard(index));
+                grid.appendChild(cardElement);
+            });
+
+            // 状態をリセット
+            flippedCards = [];
+            matchedPairs = 0;
+            canFlip = true;
+            currentPlayer = 1;
+            player1Score = { normal: 0, fukasetu: 0 };
+            player2Score = { normal: 0, fukasetu: 0 };
+            updateUI();
+            showMessage('プレイヤー1のターンです');
+        }
+
+        function flipCard(index) {
+            if (!canFlip) return;
+            
+            const cardElement = document.querySelectorAll('.card')[index];
+            
+            // すでにめくられているか、マッチ済みなら何もしない
+            if (cardElement.classList.contains('flipped') || 
+                cardElement.classList.contains('matched')) {
+                return;
+            }
+
+            // カードをめくる
+            cardElement.classList.add('flipped');
+            flippedCards.push({ index, value: cards[index].value, element: cardElement });
+
+            // 2枚めくった場合
+            if (flippedCards.length === 2) {
+                canFlip = false;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+
+            if (card1.value === card2.value) {
+                // マッチした場合
+                setTimeout(() => {
+                    card1.element.classList.add('matched');
+                    card2.element.classList.add('matched');
+                    matchedPairs++;
+                    
+                    // ポイント加算
+                    const isWatanabe = card1.value === '部';
+                    addScore(currentPlayer, isWatanabe);
+                    
+                    flippedCards = [];
+                    canFlip = true;
+                    updateUI();
+
+                    // メッセージ表示
+                    if (isWatanabe) {
+                        showMessage(`🎉 プレイヤー${currentPlayer}が「渡部」をゲット！<br><span class="fukasetu">不可説不可説転Pt</span> 獲得！`, true);
+                    } else {
+                        showMessage(`✨ プレイヤー${currentPlayer}が10Pt獲得！`);
+                    }
+
+                    // 全てマッチしたかチェック
+                    if (matchedPairs === 6) {
+                        setTimeout(showVictory, 1000);
+                    }
+                }, 500);
+            } else {
+                // マッチしなかった場合
+                setTimeout(() => {
+                    card1.element.classList.remove('flipped');
+                    card2.element.classList.remove('flipped');
+                    flippedCards = [];
+                    
+                    // ターン交代
+                    currentPlayer = currentPlayer === 1 ? 2 : 1;
+                    canFlip = true;
+                    updateUI();
+                    showMessage(`プレイヤー${currentPlayer}のターンです`);
+                }, 1000);
+            }
+        }
+
+        function addScore(player, isWatanabe) {
+            if (player === 1) {
+                if (isWatanabe) {
+                    player1Score.fukasetu++;
+                } else {
+                    player1Score.normal += 10;
+                }
+            } else {
+                if (isWatanabe) {
+                    player2Score.fukasetu++;
+                } else {
+                    player2Score.normal += 10;
+                }
+            }
+        }
+
+        function formatScore(score) {
+            if (score.fukasetu > 0) {
+                if (score.normal > 0) {
+                    return `<span class="fukasetu">不可説不可説転</span> + ${score.normal}Pt`;
+                } else {
+                    return `<span class="fukasetu">不可説不可説転Pt</span>`;
+                }
+            } else {
+                return `${score.normal}Pt`;
+            }
+        }
+
+        function updateUI() {
+            // スコア更新
+            document.getElementById('player1Score').innerHTML = formatScore(player1Score);
+            document.getElementById('player2Score').innerHTML = formatScore(player2Score);
+            
+            // アクティブプレイヤー表示
+            const p1Box = document.getElementById('player1Box');
+            const p2Box = document.getElementById('player2Box');
+            
+            if (currentPlayer === 1) {
+                p1Box.classList.add('active');
+                p2Box.classList.remove('active');
+            } else {
+                p1Box.classList.remove('active');
+                p2Box.classList.add('active');
+            }
+        }
+
+        function showMessage(text, isBonus = false) {
+            const message = document.getElementById('message');
+            message.innerHTML = text;
+            message.className = isBonus ? 'message watanabe-bonus' : 'message';
+        }
+
+        function showVictory() {
+            const message = document.getElementById('message');
+            message.className = 'message victory';
+            
+            // 勝者判定
+            let winner = '';
+            if (player1Score.fukasetu > player2Score.fukasetu) {
+                winner = 'プレイヤー1';
+            } else if (player2Score.fukasetu > player1Score.fukasetu) {
+                winner = 'プレイヤー2';
+            } else {
+                // 不可説不可説転が同数の場合は通常ポイントで判定
+                if (player1Score.normal > player2Score.normal) {
+                    winner = 'プレイヤー1';
+                } else if (player2Score.normal > player1Score.normal) {
+                    winner = 'プレイヤー2';
+                } else {
+                    winner = '引き分け';
+                }
+            }
+            
+            if (winner === '引き分け') {
+                message.innerHTML = `🎊 引き分け！ 🎊<br>両者互角の戦いでした！`;
+            } else {
+                message.innerHTML = `🎉 ${winner}の勝利！ 🎉<br>おめでとうございます！`;
+            }
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        // ゲーム開始
+        initGame();
+    </script>
+</body>
+</html>
